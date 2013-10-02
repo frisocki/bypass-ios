@@ -369,7 +369,18 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
                                                             attributes:indentationAttributes];
     [target insertAttributedString:attributedIndentation atIndex:effectiveRange.location];
     insertedCharacters += [attributedIndentation length];
+
+    // Find the size of the bullet, and indent the paragraph by that amount
+    // to align the text when wrapping.
+    NSAttributedString *insertedString = [target attributedSubstringFromRange:NSMakeRange(effectiveRange.location, insertedCharacters)];
     
+    NSMutableParagraphStyle *bulletParagraphStyle = [[NSMutableParagraphStyle alloc] init];
+    [bulletParagraphStyle setHeadIndent:insertedString.size.width];
+    
+    [target addAttribute:NSParagraphStyleAttributeName
+                   value:bulletParagraphStyle
+                   range:NSMakeRange(effectiveRange.location, effectiveRange.length + insertedCharacters - 1)];
+
     if (([[[element parentElement] parentElement] elementType] != BPListItem)
         || (element != [[[element parentElement] childElements] lastObject])) {
         insertedCharacters += [self appendNewlineOntoTarget:target];
