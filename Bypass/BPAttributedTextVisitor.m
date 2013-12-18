@@ -28,6 +28,8 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
 
 @implementation BPAttributedTextVisitor {
     BOOL _renderedFirstParagraph;
+    BOOL _renderOrderedList;
+    int  _orderedSequence;
 }
 
 - (id)init
@@ -75,6 +77,19 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
     
     // Render span elements and insert special characters for block elements
     if (elementType == BPList) {
+        
+        if ([element.attributes objectForKey:@"ordered"]) {
+            NSString *ordered = element.attributes[@"ordered"];
+
+            if ([ordered isEqualToString:@"Y"]) {
+                _renderOrderedList = YES;
+                _orderedSequence = 0;
+            }
+            else {
+                _renderOrderedList = NO;
+            }
+        }
+        
         if ([[element parentElement] elementType] == BPListItem) {
             insertedCharacters += [self insertNewlineIntoTarget:target atIndex:effectiveRange.location];
         }
@@ -136,6 +151,25 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
     [target appendAttributedString:[[NSMutableAttributedString alloc] initWithString:@"\n"]];
     
     return 1;
+}
+
+- (int)insertNumberIntoTarget:(NSMutableAttributedString*) target
+                        color:(UIColor*) numberColor
+                      atIndex:(int)index
+{
+    NSDictionary *attributes = @{
+                                       NSFontAttributeName            : [_displaySettings defaultFont],
+                                       NSForegroundColorAttributeName : numberColor
+                                       };
+    
+    NSString *sequence = [NSString stringWithFormat:@"%d. ", ++_orderedSequence];
+    NSAttributedString *attributedItem;
+    attributedItem = [[NSAttributedString alloc] initWithString:sequence
+                                                       attributes:attributes];
+    
+    [target insertAttributedString:attributedItem atIndex:index];
+    
+    return [sequence length];
 }
 
 - (int)insertBulletIntoTarget:(NSMutableAttributedString*) target
@@ -354,7 +388,24 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
             break;
     }
     
-    insertedCharacters += [self insertBulletIntoTarget:target color:bulletColor atIndex:effectiveRange.location];
+    if ([[element parentElement].attributes objectForKey:@"ordered"]) {
+        NSString *ordered = [element parentElement].attributes[@"ordered"];
+
+        if ([ordered isEqualToString:@"Y"]) {
+            _renderOrderedList = YES;
+        }
+        else {
+            _renderOrderedList = NO;
+        }
+    }
+    
+    if (_renderOrderedList) {
+        insertedCharacters += [self insertNumberIntoTarget:target color:bulletColor atIndex:effectiveRange.location];
+    }
+    else {
+        insertedCharacters += [self insertBulletIntoTarget:target color:bulletColor atIndex:effectiveRange.location];
+    }
+    
     
     NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
      [paragraphStyle setLineSpacing:[_displaySettings lineSpacingSmall]];
