@@ -148,8 +148,12 @@ NSString *const BPLinkTitleAttributeName = @"BPLinkTitleAttributeName";
 
 - (int)appendNewlineOntoTarget:(NSMutableAttributedString *)target
 {
-    [target appendAttributedString:[[NSMutableAttributedString alloc] initWithString:@"\n"]];
+
+    NSRange range = NSMakeRange(0, 1);
     
+    [target appendAttributedString:[[NSMutableAttributedString alloc] initWithString:@"\n"
+                                                                          attributes:[target attributesAtIndex:0
+                                                                                                effectiveRange:&range]]];
     return 1;
 }
 
